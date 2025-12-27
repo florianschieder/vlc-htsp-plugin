@@ -258,15 +258,12 @@ void PopulateEPG(demux_t *demux) {
         int64_t stop = event->getS64("stop");
         int duration = stop - start;
 
-        vlc_epg_event_t epg_event = {
-            .i_start = start,
-            .i_duration = duration,
-            .i_id = i,
-            .psz_name = (char *)event->getStr("title").c_str(),
-            .psz_short_description = (char *)event->getStr("summary").c_str(),
-            .psz_description = (char *)event->getStr("description").c_str(),
-        };
-        vlc_epg_AddEvent(sys->epg, &epg_event);
+        auto epg_event = vlc_epg_event_New(
+            event->getU32("eventId"), start, duration);
+        epg_event->psz_name = (char *)event->getStr("title").c_str();
+        epg_event->psz_short_description = (char *)event->getStr("summary").c_str();
+        epg_event->psz_description = (char *)event->getStr("description").c_str();
+        vlc_epg_AddEvent(sys->epg, epg_event);
 
         int64_t now = time(0);
         if (now >= start && now < stop) {
