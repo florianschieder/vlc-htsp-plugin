@@ -26,6 +26,7 @@
 #include "helper.h"
 #include "htsmessage.h"
 #include "sha1.h"
+#include "vlc-htsp-plugin.h"
 
 #include <vlc_common.h>
 #include <vlc_plugin.h>
@@ -304,6 +305,8 @@ int OpenSD(vlc_object_t *obj)
 {
     auto *sd = (services_discovery_t *)obj;
     auto *sys = new services_discovery_sys_t;
+
+    sd->description = HTSPD_DISCOVERY_MODULE_NAME;
     
     if (!sys)
         return VLC_ENOMEM;

@@ -1,0 +1,1 @@
+#define HTSPD_DISCOVERY_MODULE_NAME "Tvheadend HTSP"
