@@ -161,6 +161,35 @@ bool ConnectSD(services_discovery_t *sd) {
     return res;
 }
 
+std::unordered_map<std::string, std::vector<tmp_channel>>
+    groupChannelsByCategory(
+        services_discovery_sys_t *sys, std::list<uint32_t> channelIds,
+        std::unordered_map<uint32_t, tmp_channel> channels) {
+    std::unordered_map<std::string, std::vector<tmp_channel>> grouped;
+
+    while (channelIds.size() > 0) {
+        auto ch = channels[channelIds.front()];
+        channelIds.pop_front();
+
+        ch.item = input_item_NewExt(ch.url.c_str(), ch.name.c_str(),
+                                    -1, // duration is unspecifiable
+                                    ITEM_TYPE_STREAM, ITEM_NET);
+
+        input_item_SetArtworkURL(ch.item, ch.cicon.c_str());
+
+        ch.item->i_type = ITEM_TYPE_STREAM;
+        for (const auto &tag : ch.tags) {
+            if (!grouped.contains(tag)) {
+                grouped[tag] = {};
+            }
+            grouped[tag].push_back(ch);
+        }
+
+        sys->channelMap[ch.cid] = ch;
+    }
+    return grouped;
+}
+
 bool GetChannels(services_discovery_t *sd) {
     services_discovery_sys_t *sys = sd->p_sys;
 
@@ -256,25 +285,15 @@ bool GetChannels(services_discovery_t *sd) {
         return channels[first].cnum < channels[second].cnum;
     });
 
-    while (channelIds.size() > 0) {
-        tmp_channel ch = channels[channelIds.front()];
-        channelIds.pop_front();
-
-        ch.item = input_item_NewExt(ch.url.c_str(), ch.name.c_str(),
-                                    -1, // duration is unspecifiable
-                                    ITEM_TYPE_STREAM, ITEM_NET);
-        if (unlikely(ch.item == 0)) {
-            return false;
+    for (const auto &pair :
+         groupChannelsByCategory(sys, channelIds, channels)) {
+        const auto &category = pair.first;
+        const auto categoryItem = input_item_NewExt(
+            "", category.c_str(), -1, ITEM_TYPE_NODE, ITEM_NET_UNKNOWN);
+        services_discovery_AddItem(sd, categoryItem);
+        for (const auto &channel : pair.second) {
+            services_discovery_AddSubItem(sd, categoryItem, channel.item);
         }
-
-        input_item_SetArtworkURL(ch.item, ch.cicon.c_str());
-
-        ch.item->i_type = ITEM_TYPE_STREAM;
-        for (const auto &tag : ch.tags) {
-            services_discovery_AddItemCat(sd, ch.item, tag.c_str());
-        }
-
-        sys->channelMap[ch.cid] = ch;
     }
 
     return true;
