@@ -412,14 +412,14 @@ int OpenHTSP(vlc_object_t *obj)
 
     if(!parseURL(demux))
     {
-        msg_Dbg(demux, "Parsing URL failed!");
+        msg_Err(demux, "Parsing URL failed!");
         CloseHTSP(obj);
         return VLC_EGENERIC;
     }
 
     if(!ConnectHTSP(demux))
     {
-        msg_Dbg(demux, "Connecting to HTS source failed!");
+        msg_Err(demux, "Connecting to HTS source failed!");
         CloseHTSP(obj);
         return VLC_EGENERIC;
     }
@@ -434,7 +434,7 @@ int OpenHTSP(vlc_object_t *obj)
 
     if(!SubscribeHTSP(demux))
     {
-        msg_Dbg(demux, "Subscribing to channel failed");
+        msg_Err(demux, "Subscribing to channel failed");
         CloseHTSP(obj);
         return VLC_EGENERIC;
     }

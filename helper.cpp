@@ -45,7 +45,7 @@ bool TransmitMessageEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m)
 {
     if(sys->netfd < 0)
     {
-        msg_Dbg(obj, "Invalid netfd in TransmitMessage");
+        msg_Err(obj, "Invalid netfd in TransmitMessage");
         return false;
     }
 
@@ -54,13 +54,13 @@ bool TransmitMessageEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m)
 
     if(!m.Serialize(&len, &buf))
     {
-        msg_Dbg(obj, "Serialising message failed");
+        msg_Err(obj, "Serialising message failed");
         return false;
     }
 
     if(net_Write(obj, sys->netfd, NULL, buf, len) != (ssize_t)len)
     {
-        msg_Dbg(obj, "net_Write failed");
+        msg_Err(obj, "net_Write failed");
         return false;
     }
 
@@ -84,7 +84,7 @@ HtsMessage ReadMessageEx(vlc_object_t *obj, sys_common_t *sys)
 
     if(sys->netfd < 0)
     {
-        msg_Dbg(obj, "ReadMessage on closed netfd");
+        msg_Err(obj, "ReadMessage on closed netfd");
         return HtsMessage();
     }
 
