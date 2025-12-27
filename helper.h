@@ -19,13 +19,12 @@
 #ifndef H__HELPER_H__
 #define H__HELPER_H__
 
-#include <string>
 #include <deque>
+#include <string>
 
 #include "htsmessage.h"
 
 #include <vlc_common.h>
-
 
 #define CFG_PREFIX "htsp-"
 #define MAX_QUEUE_SIZE 1000
@@ -36,12 +35,8 @@
 extern const char *const cfg_options[];
 
 class HtsMessage;
-struct sys_common_t
-{
-    sys_common_t()
-        :netfd(-1)
-        ,nextSeqNum(1)
-    {}
+struct sys_common_t {
+    sys_common_t() : netfd(-1), nextSeqNum(1) {}
 
     virtual ~sys_common_t();
 
@@ -52,17 +47,18 @@ struct sys_common_t
 
 bool TransmitMessageEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m);
 HtsMessage ReadMessageEx(vlc_object_t *obj, sys_common_t *sys);
-HtsMessage ReadResultEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m, bool sequence = true);
-bool ReadSuccessEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m, const std::string &action, bool sequence = true);
+HtsMessage ReadResultEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m,
+                        bool sequence = true);
+bool ReadSuccessEx(vlc_object_t *obj, sys_common_t *sys, HtsMessage m,
+                   const std::string &action, bool sequence = true);
 
 #define TransmitMessage(a, b, c) TransmitMessageEx(VLC_OBJECT(a), b, c)
 #define ReadMessage(a, b) ReadMessageEx(VLC_OBJECT(a), b)
 #define ReadResult(a, b, c) ReadResultEx(VLC_OBJECT(a), b, c)
 #define ReadSuccess(a, b, c, d) ReadSuccessEx(VLC_OBJECT(a), b, c, d)
 
-#define CHECK_VLC_VERSION(major, minor) \
-        (VLC_PLUGIN_MAJOR > (major) || \
-         (VLC_PLUGIN_MAJOR == (major) && VLC_PLUGIN_MINOR >= (minor)))
-
+#define CHECK_VLC_VERSION(major, minor)                                        \
+    (VLC_PLUGIN_MAJOR > (major) ||                                             \
+     (VLC_PLUGIN_MAJOR == (major) && VLC_PLUGIN_MINOR >= (minor)))
 
 #endif
