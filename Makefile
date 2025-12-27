@@ -27,14 +27,14 @@ CXX_SOURCES = vlc-htsp-plugin.cpp htsmessage.cpp helper.cpp access.cpp discovery
 all: libhtsp_plugin.so
 
 install: all
-	mkdir -p -- "$(DESTDIR)$(plugindir)/access"
-	$(INSTALL) --mode 0755 libhtsp_plugin.so "$(DESTDIR)$(plugindir)/access"
+	mkdir -p -- "$(DESTDIR)$(plugindir)/services_discovery"
+	$(INSTALL) --mode 0755 libhtsp_plugin.so "$(DESTDIR)$(plugindir)/services_discovery"
 
 install-strip:
 	$(MAKE) install INSTALL="$(INSTALL) -s"
 
 uninstall:
-	rm -f "$(plugindir)/codec/libhtsp_plugin.so"
+	rm -f "$(DESTDIR)$(plugindir)/services_discovery/libhtsp_plugin.so"
 
 clean:
 	rm -f -- libhtsp_plugin.{dll,so} *.o
