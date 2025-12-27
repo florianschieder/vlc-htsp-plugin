@@ -272,11 +272,15 @@ void PopulateEPG(demux_t *demux)
         int64_t stop = event->getS64("stop");
         int duration = stop - start;
 
-#if CHECK_VLC_VERSION(2,1)
-        vlc_epg_AddEvent(sys->epg, start, duration, event->getStr("title").c_str(), event->getStr("summary").c_str(), event->getStr("description").c_str(), 0);
-#else
-        vlc_epg_AddEvent(sys->epg, start, duration, event->getStr("title").c_str(), event->getStr("summary").c_str(), event->getStr("description").c_str());
-#endif
+        vlc_epg_event_t epg_event =  {
+            .i_start = start,
+            .i_duration = duration,
+            .i_id = i,
+            .psz_name = (char*) event->getStr("title").c_str(),
+            .psz_short_description = (char*) event->getStr("summary").c_str(),
+            .psz_description = (char*) event->getStr("description").c_str(),
+        };
+        vlc_epg_AddEvent(sys->epg, &epg_event);
 
         int64_t now = time(0);
         if(now >= start && now < stop)
