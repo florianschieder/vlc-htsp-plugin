@@ -698,7 +698,7 @@ bool ParseSubscriptionStart(demux_t *demux, HtsMessage &msg) {
 
         es_out_Control(demux->out, ES_OUT_SET_GROUP_EPG, (int)sys->channelId,
                        sys->epg);
-        vlc_epg_Delete(sys->epg);
+        //vlc_epg_Delete(sys->epg);
         sys->epg = 0;
     }
 
