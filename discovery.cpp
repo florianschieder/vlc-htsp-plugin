@@ -302,9 +302,10 @@ void * RunSD(void *obj)
 
 int OpenSD(vlc_object_t *obj)
 {
-    services_discovery_t *sd = (services_discovery_t *)obj;
-    services_discovery_sys_t *sys = new services_discovery_sys_t;
-    if(unlikely(sys == NULL))
+    auto *sd = (services_discovery_t *)obj;
+    auto *sys = new services_discovery_sys_t;
+    
+    if (!sys)
         return VLC_ENOMEM;
     sd->p_sys = sys;
 
