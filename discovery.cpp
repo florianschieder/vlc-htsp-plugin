@@ -251,18 +251,21 @@ bool GetChannels(services_discovery_t *sd)
         tmp_channel ch = channels[channelIds.front()];
         channelIds.pop_front();
 
-        ch.item = input_item_New(ch.url.c_str(), ch.name.c_str());
+        ch.item = input_item_NewExt(
+            ch.url.c_str(),
+            ch.name.c_str(),
+            -1, // duration is unspecifiable
+            ITEM_TYPE_STREAM,
+            ITEM_NET);
         if(unlikely(ch.item == 0))
             return false;
 
         input_item_SetArtworkURL(ch.item, ch.cicon.c_str());
 
-        ch.item->i_type = ITEM_TYPE_NET;
-        for(std::string tag: ch.tags)
-            services_discovery_AddItem(sd, ch.item, tag.c_str());
-
-        services_discovery_AddItem(sd, ch.item, "All Channels");
-
+        ch.item->i_type = ITEM_TYPE_STREAM;
+        for (const auto& tag: ch.tags) {
+            services_discovery_AddItemCat(sd, ch.item, tag.c_str());
+        }
 
         sys->channelMap[ch.cid] = ch;
     }
@@ -307,7 +310,7 @@ int OpenSD(vlc_object_t *obj)
     auto *sys = new services_discovery_sys_t;
 
     sd->description = HTSPD_DISCOVERY_MODULE_NAME;
-    
+
     if (!sys)
         return VLC_ENOMEM;
     sd->p_sys = sys;
