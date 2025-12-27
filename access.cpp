@@ -80,7 +80,7 @@ struct demux_sys_t : public sys_common_t
         ,hadIFrame(false)
         ,drops(0)
         ,epg(0)
-        ,thread(0)
+        ,thread(vlc_thread_t { .handle = 0})
         ,requestSpeed(INT_MIN)
         ,requestSeek(-1)
         ,doDisable(false)
@@ -456,11 +456,10 @@ void CloseHTSP(vlc_object_t *obj)
     if(!sys)
         return;
 
-    if(sys->thread)
-    {
+    if (sys->thread.handle) {
         vlc_cancel(sys->thread);
         vlc_join(sys->thread, 0);
-        sys->thread = 0;
+        sys->thread.handle = 0;
     }
 
     delete sys;
