@@ -255,7 +255,7 @@ void PopulateEPG(demux_t *demux)
     if(!res.isValid())
         return;
 
-    sys->epg = vlc_epg_New(0);
+    sys->epg = vlc_epg_New(0, sys->channelId);
 
     std::shared_ptr<HtsList> events = res.getRoot()->getList("events");
     for(uint32_t i = 0; i < events->count(); i++)
