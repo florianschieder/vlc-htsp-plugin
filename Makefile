@@ -11,7 +11,7 @@ VLC_PLUGIN_LIBS := $(shell pkg-config --libs vlc-plugin)
 VLC_PLUGIN_MAJOR := $(shell pkg-config --modversion vlc-plugin | cut -d . -f 1)
 VLC_PLUGIN_MINOR := $(shell pkg-config --modversion vlc-plugin | cut -d . -f 2)
 
-libdir = $(PREFIX)/lib
+libdir = $(PREFIX)/lib/x86_64-linux-gnu
 plugindir = $(libdir)/vlc/plugins
 
 override CFLAGS += -DMODULE_STRING=\"htsp\" -DVLC_PLUGIN_MAJOR=$(VLC_PLUGIN_MAJOR) -DVLC_PLUGIN_MINOR=$(VLC_PLUGIN_MINOR)
