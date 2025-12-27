@@ -29,6 +29,7 @@
 #include "vlc-htsp-plugin.h"
 
 #include <vlc_common.h>
+#include <vlc_dialog.h>
 #include <vlc_network.h>
 #include <vlc_plugin.h>
 #include <vlc_services_discovery.h>
@@ -74,7 +75,10 @@ bool ConnectSD(services_discovery_t *sd) {
     }
 
     if (sys->netfd < 0) {
-        msg_Err(sd, "net_ConnectTCP failed");
+        vlc_dialog_display_error(
+            sd,
+            HTSPD_DISCOVERY_MODULE_NAME,
+            "Could not connect to Tvheadend upstream host!");
         return false;
     }
 
@@ -156,7 +160,10 @@ bool ConnectSD(services_discovery_t *sd) {
     if (res) {
         msg_Info(sd, "Successfully authenticated!");
     } else {
-        msg_Err(sd, "Authentication failed!");
+        vlc_dialog_display_error(
+            sd,
+            HTSPD_DISCOVERY_MODULE_NAME,
+            "Authentication failed!");
     }
     return res;
 }
