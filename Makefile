@@ -24,7 +24,10 @@ TARGETS = libhtsp_plugin.so
 C_SOURCES = sha1.c
 CXX_SOURCES = vlc-htsp-plugin.cpp htsmessage.cpp helper.cpp access.cpp discovery.cpp
 
-all: libhtsp_plugin.so
+# build libhtsp_plugin.so with docker for deterministic gcc version
+all:
+	docker build . -t vlc-htsp-plugin-builder:latest
+	docker run --rm -v "$(PWD)":/usr/src -w /usr/src vlc-htsp-plugin-builder:latest
 
 install: all
 	mkdir -p -- "$(DESTDIR)$(plugindir)/services_discovery"
