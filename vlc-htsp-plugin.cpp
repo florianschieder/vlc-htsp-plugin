@@ -26,8 +26,10 @@
 #include <vlc_access.h>
 #include <vlc_services_discovery.h>
 
+#include "vlc-htsp-plugin.h"
 
-VLC_SD_PROBE_HELPER( "htsp", "Tvheadend HTSP", SD_CAT_LAN )
+
+VLC_SD_PROBE_HELPER( "htsp", HTSPD_DISCOVERY_MODULE_NAME, SD_CAT_LAN )
 
 vlc_module_begin ()
     set_shortname( "HTSP Protocol" )
@@ -53,8 +55,8 @@ vlc_module_begin ()
     add_shortcut( "hts", "htsp" )
 
     add_submodule()
-    set_shortname( "HTSP Protocol Discovery" )
-    set_description( "TVHeadend HTSP Protocol Discovery" )
+    set_shortname(HTSPD_DISCOVERY_MODULE_NAME)
+    set_description(HTSPD_DISCOVERY_MODULE_NAME)
     set_category( CAT_PLAYLIST )
     set_subcategory ( SUBCAT_PLAYLIST_SD )
     set_section("Connection", NULL)

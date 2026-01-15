@@ -26,17 +26,17 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 extern const int hts_sha1_size;
 
 struct HTSSHA1;
 
-void hts_sha1_init(struct HTSSHA1* context);
-void hts_sha1_update(struct HTSSHA1* context, const uint8_t* data, unsigned int len);
-void hts_sha1_final(struct HTSSHA1* context, uint8_t digest[20]);
+void hts_sha1_init(struct HTSSHA1 *context);
+void hts_sha1_update(struct HTSSHA1 *context, const uint8_t *data,
+                     unsigned int len);
+void hts_sha1_final(struct HTSSHA1 *context, uint8_t digest[20]);
 
 #ifdef __cplusplus
 }

@@ -19,21 +19,22 @@
 #define __STDC_CONSTANT_MACROS 1
 
 #include <functional>
-#include <unordered_map>
 #include <sstream>
+#include <unordered_map>
 
 #include "discovery.h"
 #include "helper.h"
 #include "htsmessage.h"
 #include "sha1.h"
+#include "vlc-htsp-plugin.h"
 
 #include <vlc_common.h>
-#include <vlc_plugin.h>
+#include <vlc_dialog.h>
 #include <vlc_network.h>
+#include <vlc_plugin.h>
 #include <vlc_services_discovery.h>
 
-struct tmp_channel
-{
+struct tmp_channel {
     std::string name;
     uint32_t cid;
     uint32_t cnum;
@@ -43,40 +44,41 @@ struct tmp_channel
     std::list<std::string> tags;
 };
 
-struct services_discovery_sys_t : public sys_common_t
-{
+struct services_discovery_sys_t : public sys_common_t {
     services_discovery_sys_t()
-        :thread(0)
-        ,disconnect(false)
-    {}
+        : thread(vlc_thread_t{.handle = 0}), disconnect(false) {}
 
     vlc_thread_t thread;
     std::unordered_map<uint32_t, tmp_channel> channelMap;
-	bool disconnect;
+    bool disconnect;
 };
 
-bool ConnectSD(services_discovery_t *sd)
-{
+bool ConnectSD(services_discovery_t *sd) {
     services_discovery_sys_t *sys = sd->p_sys;
 
-    char *host = var_GetString(sd, CFG_PREFIX"host");
-    int port = var_GetInteger(sd, CFG_PREFIX"port");
-    sys->disconnect = var_GetBool(sd, CFG_PREFIX"disconnect");
+    char *host = var_GetString(sd, CFG_PREFIX "host");
+    int port = var_GetInteger(sd, CFG_PREFIX "port");
+    sys->disconnect = var_GetBool(sd, CFG_PREFIX "disconnect");
 
-    if(port == 0)
+    if (port == 0) {
         port = 9982;
+    }
 
-    if(host == 0 || host[0] == 0)
+    if (host == 0 || host[0] == 0) {
         sys->netfd = net_ConnectTCP(sd, "localhost", port);
-    else
+    } else {
         sys->netfd = net_ConnectTCP(sd, host, port);
+    }
 
-    if(host)
+    if (host) {
         free(host);
+    }
 
-    if(sys->netfd < 0)
-    {
-        msg_Err(sd, "net_ConnectTCP failed");
+    if (sys->netfd < 0) {
+        vlc_dialog_display_error(
+            sd,
+            HTSPD_DISCOVERY_MODULE_NAME,
+            "Could not connect to Tvheadend upstream host!");
         return false;
     }
 
@@ -86,44 +88,49 @@ bool ConnectSD(services_discovery_t *sd)
     map.setData("htspversion", HTSP_PROTO_VERSION);
 
     HtsMessage m = ReadResult(sd, sys, map.makeMsg());
-    if(!m.isValid())
-    {
+    if (!m.isValid()) {
         msg_Err(sd, "No valid hello response");
         return false;
     }
 
     uint32_t chall_len;
-    void * chall;
+    void *chall;
     m.getRoot()->getBin("challenge", &chall_len, &chall);
 
     std::string serverName = m.getRoot()->getStr("servername");
     std::string serverVersion = m.getRoot()->getStr("serverversion");
     uint32_t protoVersion = m.getRoot()->getU32("htspversion");
 
-    msg_Info(sd, "Connected to HTSP Server %s, version %s, protocol %d", serverName.c_str(), serverVersion.c_str(), protoVersion);
-    if(protoVersion < HTSP_PROTO_VERSION)
-    {
-        msg_Warn(sd, "TVHeadend is running an older version of HTSP(v%d) than we are(v%d). No effort was made to keep compatible with older versions, update tvh before reporting problems!", protoVersion, HTSP_PROTO_VERSION);
-    }
-    else if(protoVersion > HTSP_PROTO_VERSION)
-    {
-        msg_Info(sd, "TVHeadend is running a more recent version of HTSP(v%d) than we are(v%d). Check if there is an update available!", protoVersion, HTSP_PROTO_VERSION);
+    msg_Info(sd, "Connected to HTSP Server %s, version %s, protocol %d",
+             serverName.c_str(), serverVersion.c_str(), protoVersion);
+    if (protoVersion < HTSP_PROTO_VERSION) {
+        msg_Warn(sd,
+                 "TVHeadend is running an older version of HTSP(v%d) than we "
+                 "are(v%d). No effort was made to keep compatible with older "
+                 "versions, update tvh before reporting problems!",
+                 protoVersion, HTSP_PROTO_VERSION);
+    } else if (protoVersion > HTSP_PROTO_VERSION) {
+        msg_Info(
+            sd,
+            "TVHeadend is running a more recent version of HTSP(v%d) than we "
+            "are(v%d). Check if there is an update available!",
+            protoVersion, HTSP_PROTO_VERSION);
     }
 
-    char *user = var_GetString(sd, CFG_PREFIX"user");
-    char *pass = var_GetString(sd, CFG_PREFIX"pass");
-    if(user == 0 || user[0] == 0)
+    char *user = var_GetString(sd, CFG_PREFIX "user");
+    char *pass = var_GetString(sd, CFG_PREFIX "pass");
+    if (user == 0 || user[0] == 0) {
         return true;
+    }
 
     map = HtsMap();
     map.setData("method", "authenticate");
     map.setData("username", user);
 
-    if(pass != 0 && pass[0] != 0 && chall)
-    {
+    if (pass != 0 && pass[0] != 0 && chall) {
         msg_Info(sd, "Authenticating as '%s' with a password", user);
 
-        HTSSHA1 *shactx = (HTSSHA1*)malloc(hts_sha1_size);
+        HTSSHA1 *shactx = (HTSSHA1 *)malloc(hts_sha1_size);
         uint8_t d[20];
         hts_sha1_init(shactx);
         hts_sha1_update(shactx, (const uint8_t *)pass, strlen(pass));
@@ -135,56 +142,89 @@ bool ConnectSD(services_discovery_t *sd)
         map.setData("digest", bin);
 
         free(shactx);
-    }
-    else
+    } else {
         msg_Info(sd, "Authenticating as '%s' without a password", user);
+    }
 
-    if(user)
+    if (user) {
         free(user);
-    if(pass)
+    }
+    if (pass) {
         free(pass);
-    if(chall)
+    }
+    if (chall) {
         free(chall);
+    }
 
     bool res = ReadSuccess(sd, sys, map.makeMsg(), "authenticate");
-    if(res)
+    if (res) {
         msg_Info(sd, "Successfully authenticated!");
-    else
-        msg_Err(sd, "Authentication failed!");
+    } else {
+        vlc_dialog_display_error(
+            sd,
+            HTSPD_DISCOVERY_MODULE_NAME,
+            "Authentication failed!");
+    }
     return res;
 }
 
-bool GetChannels(services_discovery_t *sd)
-{
+std::unordered_map<std::string, std::vector<tmp_channel>>
+    groupChannelsByCategory(
+        services_discovery_sys_t *sys, std::list<uint32_t> channelIds,
+        std::unordered_map<uint32_t, tmp_channel> channels) {
+    std::unordered_map<std::string, std::vector<tmp_channel>> grouped;
+
+    while (channelIds.size() > 0) {
+        auto ch = channels[channelIds.front()];
+        channelIds.pop_front();
+
+        ch.item = input_item_NewExt(ch.url.c_str(), ch.name.c_str(),
+                                    -1, // duration is unspecifiable
+                                    ITEM_TYPE_STREAM, ITEM_NET);
+
+        input_item_SetArtworkURL(ch.item, ch.cicon.c_str());
+
+        ch.item->i_type = ITEM_TYPE_STREAM;
+        for (const auto &tag : ch.tags) {
+            if (!grouped.contains(tag)) {
+                grouped[tag] = {};
+            }
+            grouped[tag].push_back(ch);
+        }
+
+        sys->channelMap[ch.cid] = ch;
+    }
+    return grouped;
+}
+
+bool GetChannels(services_discovery_t *sd) {
     services_discovery_sys_t *sys = sd->p_sys;
 
     HtsMap map;
     map.setData("method", "enableAsyncMetadata");
-    if(!ReadSuccess(sd, sys, map.makeMsg(), "enable async metadata"))
+    if (!ReadSuccess(sd, sys, map.makeMsg(), "enable async metadata")) {
         return false;
+    }
 
     std::list<uint32_t> channelIds;
     std::unordered_map<uint32_t, tmp_channel> channels;
 
     HtsMessage m;
-    while((m = ReadMessage(sd, sys)).isValid())
-    {
+    while ((m = ReadMessage(sd, sys)).isValid()) {
         std::string method = m.getRoot()->getStr("method");
-        if(method.empty() || method == "initialSyncCompleted")
-        {
+        if (method.empty() || method == "initialSyncCompleted") {
             msg_Info(sd, "Finished getting initial metadata sync");
             break;
         }
 
-        if(method == "channelAdd")
-        {
-            if(!m.getRoot()->contains("channelId"))
+        if (method == "channelAdd") {
+            if (!m.getRoot()->contains("channelId")) {
                 continue;
+            }
             uint32_t cid = m.getRoot()->getU32("channelId");
 
             std::string cname = m.getRoot()->getStr("channelName");
-            if(cname.empty())
-            {
+            if (cname.empty()) {
                 std::ostringstream ss;
                 ss << "Channel " << cid;
                 cname = ss.str();
@@ -197,20 +237,23 @@ bool GetChannels(services_discovery_t *sd)
             std::ostringstream oss;
             oss << "htsp://";
 
-            char *user = var_GetString(sd, CFG_PREFIX"user");
-            char *pass = var_GetString(sd, CFG_PREFIX"pass");
-            if(user != 0 && user[0] != 0 && pass != 0 && pass[0] != 0)
+            char *user = var_GetString(sd, CFG_PREFIX "user");
+            char *pass = var_GetString(sd, CFG_PREFIX "pass");
+            if (user != 0 && user[0] != 0 && pass != 0 && pass[0] != 0) {
                 oss << user << ":" << pass << "@";
-            else if(user != 0 && user[0] != 0)
+            } else if (user != 0 && user[0] != 0) {
                 oss << user << "@";
+            }
 
-            char *_host = var_GetString(sd, CFG_PREFIX"host");
+            char *_host = var_GetString(sd, CFG_PREFIX "host");
             const char *host = _host;
-            if(host == 0 || host[0] == 0)
+            if (host == 0 || host[0] == 0) {
                 host = "localhost";
-            int port = var_GetInteger(sd, CFG_PREFIX"port");
-            if(port == 0)
+            }
+            int port = var_GetInteger(sd, CFG_PREFIX "port");
+            if (port == 0) {
                 port = 9982;
+            }
             oss << host << ":" << port << "/" << cid;
 
             channels[cid].name = cname;
@@ -220,24 +263,28 @@ bool GetChannels(services_discovery_t *sd)
             channels[cid].url = oss.str();
 
             channelIds.push_back(cid);
-            
-            if(user)
+
+            if (user) {
                 free(user);
-            if(pass)
+            }
+            if (pass) {
                 free(pass);
-            if(_host)
+            }
+            if (_host) {
                 free(_host);
-        }
-        else if(method == "tagAdd" || method == "tagUpdate")
-        {
-            if(!m.getRoot()->contains("tagId") || !m.getRoot()->contains("tagName"))
+            }
+        } else if (method == "tagAdd" || method == "tagUpdate") {
+            if (!m.getRoot()->contains("tagId") ||
+                !m.getRoot()->contains("tagName")) {
                 continue;
+            }
 
             std::string tagName = m.getRoot()->getStr("tagName");
 
             std::shared_ptr<HtsList> chList = m.getRoot()->getList("members");
-            for(uint32_t i = 0; i < chList->count(); ++i)
+            for (uint32_t i = 0; i < chList->count(); ++i) {
                 channels[chList->getData(i)->getU32()].tags.push_back(tagName);
+            }
         }
     }
 
@@ -245,52 +292,41 @@ bool GetChannels(services_discovery_t *sd)
         return channels[first].cnum < channels[second].cnum;
     });
 
-    while(channelIds.size() > 0)
-    {
-        tmp_channel ch = channels[channelIds.front()];
-        channelIds.pop_front();
-
-        ch.item = input_item_New(ch.url.c_str(), ch.name.c_str());
-        if(unlikely(ch.item == 0))
-            return false;
-
-        input_item_SetArtworkURL(ch.item, ch.cicon.c_str());
-
-        ch.item->i_type = ITEM_TYPE_NET;
-        for(std::string tag: ch.tags)
-            services_discovery_AddItem(sd, ch.item, tag.c_str());
-
-        services_discovery_AddItem(sd, ch.item, "All Channels");
-
-
-        sys->channelMap[ch.cid] = ch;
+    for (const auto &pair :
+         groupChannelsByCategory(sys, channelIds, channels)) {
+        const auto &category = pair.first;
+        const auto categoryItem = input_item_NewExt(
+            "", category.c_str(), -1, ITEM_TYPE_NODE, ITEM_NET_UNKNOWN);
+        services_discovery_AddItem(sd, categoryItem);
+        for (const auto &channel : pair.second) {
+            services_discovery_AddSubItem(sd, categoryItem, channel.item);
+        }
     }
 
     return true;
 }
 
-void * RunSD(void *obj)
-{
+void *RunSD(void *obj) {
     services_discovery_t *sd = (services_discovery_t *)obj;
     services_discovery_sys_t *sys = sd->p_sys;
 
-    if(!ConnectSD(sd))
-    {
+    if (!ConnectSD(sd)) {
         msg_Err(sd, "Connecting to HTS Failed!");
         return 0;
     }
 
     GetChannels(sd);
 
-    while(!sys->disconnect)
-    {
+    while (!sys->disconnect) {
         HtsMessage msg = ReadMessage(sd, sys);
-        if(!msg.isValid())
+        if (!msg.isValid()) {
             break;
+        }
 
         std::string method = msg.getRoot()->getStr("method");
-        if(method.empty())
+        if (method.empty()) {
             break;
+        }
 
         msg_Dbg(sd, "Got Message with method %s", method.c_str());
     }
@@ -300,18 +336,20 @@ void * RunSD(void *obj)
     return 0;
 }
 
-int OpenSD(vlc_object_t *obj)
-{
-    services_discovery_t *sd = (services_discovery_t *)obj;
-    services_discovery_sys_t *sys = new services_discovery_sys_t;
-    if(unlikely(sys == NULL))
+int OpenSD(vlc_object_t *obj) {
+    auto *sd = (services_discovery_t *)obj;
+    auto *sys = new services_discovery_sys_t;
+
+    sd->description = HTSPD_DISCOVERY_MODULE_NAME;
+
+    if (!sys) {
         return VLC_ENOMEM;
+    }
     sd->p_sys = sys;
 
     config_ChainParse(sd, CFG_PREFIX, cfg_options, sd->p_cfg);
 
-    if(vlc_clone(&sys->thread, RunSD, sd, VLC_THREAD_PRIORITY_LOW))
-    {
+    if (vlc_clone(&sys->thread, RunSD, sd, VLC_THREAD_PRIORITY_LOW)) {
         delete sys;
         return VLC_EGENERIC;
     }
@@ -319,19 +357,18 @@ int OpenSD(vlc_object_t *obj)
     return VLC_SUCCESS;
 }
 
-void CloseSD(vlc_object_t *obj)
-{
+void CloseSD(vlc_object_t *obj) {
     services_discovery_t *sd = (services_discovery_t *)obj;
     services_discovery_sys_t *sys = sd->p_sys;
 
-    if(!sys)
+    if (!sys) {
         return;
+    }
 
-    if(sys->thread)
-    {
+    if (sys->thread.handle) {
         vlc_cancel(sys->thread);
         vlc_join(sys->thread, 0);
-        sys->thread = 0;
+        sys->thread.handle = 0;
     }
 
     delete sys;
