@@ -21,7 +21,6 @@
 #include <atomic>
 #include <climits>
 #include <ctime>
-#include <format>
 #include <queue>
 
 #include "access.h"
@@ -362,13 +361,15 @@ bool SubscribeHTSP(demux_t *demux) {
 
 bool parseURL(demux_t *demux) {
     demux_sys_t *sys = demux->p_sys;
-    const auto path = std::format(
-        "{}://{}",
-        demux->psz_access,
-        demux->psz_location);
+    char *path;
+    asprintf(&path,
+             "%s://%s",
+             demux->psz_access,
+             demux->psz_location);
 
     vlc_url_t *url = &(sys->url);
-    vlc_UrlParse(url, path.c_str());
+    vlc_UrlParse(url, path);
+    free(path);
 
     if (url->psz_host == 0 || *url->psz_host == 0) {
         return false;
