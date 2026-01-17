@@ -6,14 +6,18 @@ of network sources.
 
 ## Compatibility
 
-At the moment, the plugin is only compatible with Linux systems. Enabling
-compatibility with other OSes is planned.
+At the moment, the plugin is only tested with Linux systems and VLC 3.0.21. It may
+compile on another OS or VLC 3.x version and it may work correctly, but it also may
+not. I have not tried out yet, honestly.
+
+Enabling ensured compatibility with other OSes and offering prebuilt
+binaries for each supported VLC and OS version is planned.
 
 ## Installation
 
 ### Linux
 
-Prebuilt binaries are not yet available. At the time being, you need a somewhat
+Prebuilt binaries are not yet available, so for the time being, you need a somewhat
 up-to-date `g++` compiler, GNU make and (surprise) root privileges.
 
 Just run the following commands:
